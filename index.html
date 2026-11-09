@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 일기장</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+:root{--desk:#2e4a3f;--paper:#fdfdf8;--rule:#c9dceb;--margin:#e98a8f;--ink:#24304f;--soft:#66708a;--blue:#2347b5}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--desk);color:var(--ink);font:16px/1.6 'Gowun Dodum',sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:6px 8px;border-radius:6px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+input,textarea,select{width:100%;padding:10px;border:1px solid var(--rule);border-radius:6px;background:#fff;margin-bottom:10px}
+.page{position:relative;background:var(--paper);max-width:720px;min-height:100vh;margin:0 auto;padding:20px 18px 96px 34px}
+.page:before{content:'';position:absolute;top:0;bottom:0;left:22px;border-left:2px solid var(--margin);pointer-events:none}
+.pen{font-family:'Nanum Pen Script',cursive;font-weight:400}
+h1{font-size:40px;margin:0 0 10px;line-height:1.2}
+h2.date{font-size:30px;margin:26px 0 6px;line-height:1.2}
+.main-btn{background:var(--blue);color:#fff;padding:11px 18px;width:100%;font-weight:700}
+.link{color:var(--blue);text-decoration:underline}
+.soft{color:var(--soft);font-size:14px}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--rule);display:flex;z-index:5}
+nav button{flex:1;padding:14px 2px;border-radius:0}
+nav button.on{color:var(--blue);font-weight:700;box-shadow:inset 0 3px var(--blue)}
+.chips{display:flex;gap:6px;overflow:auto;padding:4px 0}
+.chips button{white-space:nowrap;border:1px solid var(--rule);background:#fff}
+.chips button.on{border-color:currentColor;font-weight:700}
+.entry{padding:8px 0 16px;border-bottom:1px dashed var(--rule)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+.title{font-size:30px;line-height:32px;margin:4px 0}
+.body{white-space:pre-wrap;font-size:17px;line-height:32px;background:repeating-linear-gradient(transparent 0 31px,var(--rule) 31px 32px);min-height:32px}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.photos div{aspect-ratio:1;background:#eef1f4;border-radius:4px;overflow:hidden}
+.photos img{width:100%;height:100%;object-fit:cover;display:block}
+.acts{display:flex;flex-wrap:wrap;gap:2px;margin-top:6px;font-size:14px;margin-left:-8px}
+.cm{padding:6px 0;border-top:1px solid #eef1f4;font-size:15px}
+.row{display:flex;gap:6px;align-items:flex-start}.row input{margin:0}.row button{white-space:nowrap}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal button{min-height:52px;padding:4px 0;border:1px solid #eef1f4;background:#fff;border-radius:4px}
+.cal button.on{border-color:var(--blue);border-width:2px}
+.dots{display:flex;gap:2px;justify-content:center;height:8px}.dots i{width:7px;height:7px;border-radius:50%}
+.sheet{position:fixed;inset:0;background:var(--paper);z-index:10;overflow:auto}
+.sheet>div{max-width:640px;margin:0 auto;padding:16px 18px 40px}
+.opts{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.opts button{border:1px solid var(--rule);background:#fff}.opts button.on{border-color:var(--blue);color:var(--blue);font-weight:700}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.thumbs div{position:relative;width:76px;height:76px;background:#eef1f4}.thumbs img{width:100%;height:100%;object-fit:cover}
+.thumbs button{position:absolute;top:0;right:0;background:#000a;color:#fff;padding:0 7px}
+.member{padding:10px 0;border-bottom:1px solid #eef1f4}
+#toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:6px;z-index:30;display:none;max-width:90vw}
+.auth{max-width:420px;margin:0 auto}
+@media(min-width:960px){body{padding:24px 0}.page{min-height:calc(100vh - 48px);padding:32px 48px 40px 72px}.page:before{left:54px}
+nav{position:fixed;left:calc(50% + 360px);right:auto;bottom:auto;top:60px;flex-direction:column;background:none;border:0;width:96px}
+nav button{background:#fff;margin-bottom:4px;border-radius:0 8px 8px 0;padding:12px 6px}nav button.on{box-shadow:inset 3px 0 var(--blue)}}
+</style>
+</head>
+<body>
+<main class="page" id="app"></main>
+<nav id="nav" hidden></nav>
+<div id="toast"></div>
+<script>
+// ▼ 따옴표 안에 Apps Script 웹 앱 URL(/exec로 끝나는 주소)을 넣으세요
+const API_URL='여기에_웹앱_URL_붙여넣기';
+const PENS=['#2347b5','#b3261e','#1e6b45','#6a3aa2','#8a4b12','#0b6e86','#b0306f','#3b3f46'];
+const MOODS=['😊 좋음','🙂 평온','😢 슬픔','😠 화남','😴 피곤'],WEATHERS=['☀️ 맑음','☁️ 흐림','🌧️ 비','❄️ 눈','💨 바람'];
+const app=document.getElementById('app'),nav=document.getElementById('nav');
+const openC=new Set();let token='',me=null,members=[],tab='feed',filter='',offset=0,photoCache={};
+try{token=localStorage.getItem('diaryToken')||''}catch(e){}
+function setToken(t){token=t;try{t?localStorage.setItem('diaryToken',t):localStorage.removeItem('diaryToken')}catch(e){}}
+function h(t,a,...c){const n=document.createElement(t);for(const k in a||{}){if(k.startsWith('on'))n[k]=a[k];else if(k==='class')n.className=a[k];else if(k==='style')n.style.cssText=a[k];else if(k==='value')n.value=a[k];else if(a[k]!==false&&a[k]!=null)n.setAttribute(k,a[k])}c.flat().forEach(x=>{if(x!=null&&x!==false)n.append(x)});return n}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2600)}
+async function call(a,p){let r;try{const x=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:a,token,p:p||{}})});r=await x.json()}catch(e){throw new Error('서버에 연결하지 못했습니다.')}if(r.ok)return r.data;if(r.code==='AUTH'){setToken('');showAuth()}throw new Error(r.error)}
+function guard(f){return async(...a)=>{try{return await f(...a)}catch(e){toast(e.message)}}}
+const user=id=>members.find(m=>m.id===id)||{nickname:'알 수 없음',pen:7};
+const color=id=>PENS[user(id).pen%8];
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dateText=s=>{const d=new Date(s+'T00:00:00');return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+'일월화수목금토'[d.getDay()]+'요일'};
+
+function field(ph,type){return h('input',{placeholder:ph,'aria-label':ph,type:type||'text'})}
+function showAuth(mode){
+  nav.hidden=true;app.replaceChildren();mode=mode||'login';
+  const id=field('아이디'),pw=field('비밀번호','password'),inv=field('초대코드'),nick=field('별명');
+  const go=guard(async e=>{e.preventDefault();
+    const d=mode==='login'?await call('login',{id:id.value,password:pw.value}):await call('signup',{invite:inv.value,id:id.value,nickname:nick.value,password:pw.value});
+    setToken(d.token);start()});
+  app.append(h('div',{class:'auth'},h('h1',{class:'pen'},'우리 일기장'),
+    h('form',{onsubmit:go},mode==='signup'&&inv,mode==='signup'&&nick,id,pw,h('button',{class:'main-btn'},mode==='login'?'로그인':'가입하기')),
+    h('p',{},h('button',{class:'link',onclick:()=>showAuth(mode==='login'?'signup':'login')},mode==='login'?'초대코드로 가입하기':'로그인으로 돌아가기'))));
+}
+function pwForm(forced){
+  const cur=field(forced?'임시 비밀번호':'현재 비밀번호','password'),next=field('새 비밀번호 (8자 이상)','password');
+  return h('form',{onsubmit:guard(async e=>{e.preventDefault();const d=await call('changePw',{current:cur.value,next:next.value});setToken(d.token);toast('비밀번호를 변경했습니다.');start()})},cur,next,h('button',{class:'main-btn'},'비밀번호 변경'));
+}
+const start=guard(async()=>{
+  if(!token)return showAuth();
+  const d=await call('me');me=d.me;members=d.members;
+  if(d.must){nav.hidden=true;app.replaceChildren(h('div',{class:'auth'},h('h1',{class:'pen'},'새 비밀번호 설정'),pwForm(true)));return}
+  drawNav();show(tab);
+});
+function drawNav(){
+  const t=[['feed','일기'],['cal','달력'],['write','쓰기'],['my','내 정보']];if(me.role==='admin')t.push(['admin','관리']);
+  nav.hidden=false;nav.replaceChildren(...t.map(([k,l])=>h('button',{class:k===tab?'on':'',onclick:()=>k==='write'?editor():show(k)},l)));
+}
+function show(k){tab=k;drawNav();app.replaceChildren();({feed:showFeed,cal:showCal,my:showMy,admin:showAdmin})[k]()}
+
+function chips(cb){return h('div',{class:'chips'},[{id:'',nickname:'모두'}].concat(members).map(m=>h('button',{class:m.id===filter?'on':'',style:m.id?'color:'+PENS[m.pen%8]:'',onclick:()=>{filter=m.id;cb()}},m.nickname)))}
+function photoNode(e,id){
+  const box=h('div');const put=src=>box.replaceChildren(h('img',{src,alt:'일기 사진'}));
+  if(photoCache[id])put(photoCache[id]);else guard(async()=>{photoCache[id]=await call('photo',{entryId:e.id,fileId:id});put(photoCache[id])})();
+  return box;
+}
+function entryNode(e,reload){
+  const c=color(e.authorId),mine=e.authorId===me.id;
+  const again=async()=>{await reload()};
+  const list=h('div',{hidden:!openC.has(e.id)});
+  const input=h('input',{placeholder:'댓글 쓰기','aria-label':'댓글 쓰기'});
+  list.append(...e.comments.map(x=>h('div',{class:'cm'},h('b',{style:'color:'+color(x.authorId)},user(x.authorId).nickname+' '),x.body,
+    (x.authorId===me.id||mine||me.role==='admin')&&h('button',{class:'soft',onclick:guard(async()=>{await call('uncomment',{id:x.id});await again()})},'삭제'))),
+    h('form',{class:'row',onsubmit:guard(async ev=>{ev.preventDefault();await call('comment',{entryId:e.id,body:input.value});await again()})},input,h('button',{class:'link'},'등록')));
+  return h('article',{class:'entry'},
+    h('div',{class:'meta'},h('b',{style:'color:'+c},user(e.authorId).nickname),e.mood&&h('span',{},e.mood),e.weather&&h('span',{},e.weather),e.visibility==='private'&&h('span',{class:'soft'},'🔒 나만 보기'),e.edited&&h('span',{class:'soft'},'수정됨')),
+    e.title&&h('div',{class:'title pen',style:'color:'+c},e.title),
+    e.body&&h('div',{class:'body',style:'color:'+c},e.body),
+    e.photos.length?h('div',{class:'photos'},e.photos.map(id=>photoNode(e,id))):null,
+    h('div',{class:'acts'},
+      h('button',{'aria-pressed':String(e.likes.includes(me.id)),onclick:guard(async()=>{await call('like',{entryId:e.id});await again()})},(e.likes.includes(me.id)?'♥ ':'♡ ')+'공감 '+e.likes.length),
+      h('button',{onclick:()=>{list.hidden=!list.hidden;list.hidden?openC.delete(e.id):openC.add(e.id)}},'댓글 '+e.comments.length),
+      mine&&h('button',{onclick:()=>editor(e)},'수정'),
+      (mine||me.role==='admin')&&h('button',{onclick:guard(async()=>{if(confirm('이 일기를 삭제할까요? 되돌릴 수 없습니다.')){await call('remove',{id:e.id});await again()}})},'삭제')),
+    e.likes.length?h('div',{class:'soft'},e.likes.map(i=>user(i).nickname).join(', ')+' 공감'):null,list);
+}
+function renderList(box,items){let last='';items.forEach(e=>{if(e.date!==last){last=e.date;box.append(h('h2',{class:'date pen'},dateText(e.date)))}box.append(entryNode(e,refresh))})}
+let refresh=()=>{};
+const showFeed=guard(async()=>{
+  const box=h('div'),more=h('div');app.replaceChildren(h('h1',{class:'pen'},'우리 일기장'),chips(showFeed),box,more);
+  let shown=[];
+  const load=guard(async(n,count)=>{const d=await call('feed',{offset:n,authorId:filter});
+    shown=n?shown.concat(d.items):d.items;box.replaceChildren();renderList(box,shown);
+    if(!shown.length)box.append(h('p',{class:'soft'},'아직 일기가 없습니다. 아래 쓰기를 눌러 첫 일기를 남겨 보세요.'));
+    more.replaceChildren(d.more?h('button',{class:'link',onclick:()=>load(shown.length)},'더 보기'):'')});
+  refresh=()=>load(0);await load(0);
+});
+let calDate=new Date(),calSel='';
+const showCal=guard(async()=>{
+  const y=calDate.getFullYear(),m=calDate.getMonth(),key=y+'-'+String(m+1).padStart(2,'0');
+  const data=await call('calendar',{month:key}),grid=h('div',{class:'cal'}),list=h('div');
+  const move=n=>{calDate=new Date(y,m+n,1);calSel='';showCal()};
+  '일월화수목금토'.split('').forEach(x=>grid.append(h('div',{class:'soft'},x)));
+  for(let i=0;i<new Date(y,m,1).getDay();i++)grid.append(h('div'));
+  const load=guard(async()=>{if(!calSel)return;const d=await call('feed',{date:calSel});list.replaceChildren();renderList(list,d.items);if(!d.items.length)list.append(h('p',{class:'soft'},'이 날의 일기가 없습니다.'))});
+  refresh=showCal;
+  for(let d=1;d<=new Date(y,m+1,0).getDate();d++){const ds=key+'-'+String(d).padStart(2,'0');
+    grid.append(h('button',{class:ds===calSel?'on':'','aria-label':dateText(ds),onclick:()=>{calSel=ds;showCal()}},d,h('div',{class:'dots'},(data[ds]||[]).slice(0,4).map(a=>h('i',{style:'background:'+color(a)})))))}
+  app.replaceChildren(h('div',{class:'row',style:'justify-content:space-between;align-items:center'},h('button',{'aria-label':'이전 달',onclick:()=>move(-1)},'◀'),h('h1',{class:'pen',style:'margin:0'},y+'년 '+(m+1)+'월'),h('button',{'aria-label':'다음 달',onclick:()=>move(1)},'▶')),grid,list);
+  load();
+});
+function shrink(file){return new Promise((ok,no)=>{const url=URL.createObjectURL(file),i=new Image();i.onload=()=>{const r=Math.min(1,1280/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*r;c.height=i.height*r;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',.82))};i.onerror=()=>no(new Error('읽을 수 없는 사진입니다.'));i.src=url})}
+function picker(list,val,set){const b=h('div',{class:'opts'});const draw=()=>b.replaceChildren(...list.map(x=>h('button',{type:'button',class:x===val?'on':'',onclick:()=>{val=val===x?'':x;set(val);draw()}},x)));draw();return b}
+function editor(e){
+  e=e||{};let mood=e.mood||'',weather=e.weather||'',vis=e.visibility||'public',keep=(e.photos||[]).slice(),fresh=[];
+  const date=h('input',{type:'date','aria-label':'날짜',value:e.date||today()}),title=h('input',{placeholder:'제목','aria-label':'제목',value:e.title||''}),body=h('textarea',{rows:10,placeholder:'오늘 있었던 일','aria-label':'본문'});body.value=e.body||'';
+  const thumbs=h('div',{class:'thumbs'}),file=h('input',{type:'file',accept:'image/*',multiple:true,'aria-label':'사진 추가'});
+  const draw=()=>thumbs.replaceChildren(...keep.map(id=>h('div',{},photoCache[id]?h('img',{src:photoCache[id],alt:''}):'사진',h('button',{type:'button','aria-label':'사진 빼기',onclick:()=>{keep=keep.filter(x=>x!==id);draw()}},'×'))),...fresh.map(s=>h('div',{},h('img',{src:s,alt:''}),h('button',{type:'button','aria-label':'사진 빼기',onclick:()=>{fresh=fresh.filter(x=>x!==s);draw()}},'×'))));
+  draw();
+  file.onchange=guard(async()=>{for(const f of file.files){if(keep.length+fresh.length>=4){toast('사진은 4장까지 올릴 수 있습니다.');break}fresh.push(await shrink(f))}file.value='';draw()});
+  const sheet=h('div',{class:'sheet'});const close=()=>sheet.remove();let busy=false;
+  const save=h('button',{class:'main-btn'},e.id?'수정 저장':'일기 저장');
+  sheet.append(h('div',{},h('button',{class:'link',type:'button',onclick:()=>{if(confirm('작성을 그만둘까요? 입력한 내용은 저장되지 않습니다.'))close()}},'닫기'),h('h1',{class:'pen'},e.id?'일기 수정':'일기 쓰기'),
+    h('form',{onsubmit:guard(async ev=>{ev.preventDefault();if(busy)return;busy=true;save.textContent='저장 중';try{await call('save',{id:e.id||'',date:date.value,title:title.value,body:body.value,mood,weather,visibility:vis,keep,fresh});close();toast('저장했습니다.');show(tab==='cal'?'cal':'feed')}finally{busy=false;save.textContent=e.id?'수정 저장':'일기 저장'}})},
+      date,title,body,h('b',{},'기분'),picker(MOODS,mood,v=>mood=v),h('b',{},'날씨'),picker(WEATHERS,weather,v=>weather=v),h('b',{},'사진 (4장까지)'),thumbs,file,h('b',{},'공개 범위'),
+      (()=>{const s=h('select',{'aria-label':'공개 범위',onchange:ev=>vis=ev.target.value},h('option',{value:'public'},'전체 공개'),h('option',{value:'private'},'나만 보기'));s.value=vis;return s})(),save)));
+  document.body.append(sheet);
+}
+function showMy(){app.replaceChildren(h('h1',{class:'pen',style:'color:'+PENS[me.pen%8]},me.nickname),h('p',{class:'soft'},'아이디: '+me.id),h('h2',{class:'pen'},'비밀번호 변경'),pwForm(false),h('p',{},h('button',{class:'link',onclick:()=>{setToken('');showAuth()}},'로그아웃')))}
+const showAdmin=guard(async()=>{
+  const d=await call('adminInfo'),code=h('b',{},d.invite);
+  app.replaceChildren(h('h1',{class:'pen'},'관리'),h('p',{},'초대코드: ',code,' ',h('button',{class:'link',onclick:guard(async()=>{if(confirm('초대코드를 바꿀까요? 이전 코드는 쓸 수 없게 됩니다.'))code.textContent=(await call('adminInvite')).invite})},'새로 만들기')),
+    ...members.map(m=>h('div',{class:'member'},h('b',{style:'color:'+PENS[m.pen%8]},m.nickname),' ('+m.id+')',m.status!=='active'&&h('span',{class:'soft'},' 정지됨'),m.id!==me.id&&h('div',{},
+      h('button',{class:'link',onclick:guard(async()=>{if(confirm(m.nickname+' 님의 비밀번호를 초기화할까요?')){const r=await call('adminReset',{id:m.id});alert('임시 비밀번호: '+r.temp)}})},'비밀번호 초기화'),
+      h('button',{class:'link',onclick:guard(async()=>{await call('adminStatus',{id:m.id});await start()})},m.status==='active'?'정지':'정지 해제')))));
+});
+start();
+</script>
+</body>
+</html>
